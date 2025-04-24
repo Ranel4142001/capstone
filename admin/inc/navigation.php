@@ -31,7 +31,15 @@
                         </p>
                       </a>
                     </li> 
-                    
+                    <li class="nav-item dropdown">
+                      <a href="<?php echo base_url ?>admin/?page=production" class="nav-link nav-production">
+                      <i class="nav-icon fas fa-industry"></i>
+
+                        <p>
+                          Production
+                        </p>
+                      </a>
+                    </li>
                     <li class="nav-item dropdown">
                       <a href="<?php echo base_url ?>admin/?page=sales" class="nav-link nav-sales">
                         <i class="nav-icon fas fa-hand-holding-water"></i>
@@ -75,6 +83,7 @@
                         </p>
                       </a>
                     </li>
+                    
                   </ul>
                 </nav>
                 <!-- /.sidebar-menu -->
