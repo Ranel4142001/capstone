@@ -75,6 +75,13 @@
                       </a>
                     </li>
                     <li class="nav-header">Settings</li>
+
+                    <li class="nav-item dropdown">
+                  <a href="<?php echo base_url ?>admin/?page=analytics.php" class="nav-link nav-analytics">
+                 <i class="nav-icon fas fa-chart-line"></i>
+                  <p>Analytics</p>
+                  </a>
+                  </li>
                     <li class="nav-item dropdown">
                       <a href="<?php echo base_url ?>admin/?page=system_info" class="nav-link nav-system_info">
                         <i class="nav-icon fas fa-info-circle"></i>
@@ -83,6 +90,7 @@
                         </p>
                       </a>
                     </li>
+                    
                     
                   </ul>
                 </nav>

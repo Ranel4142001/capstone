@@ -5,10 +5,21 @@ require_once('inc/header.php');
 // Get date filters from GET parameters
 $date_start = $_GET['date_start'] ?? '';
 $date_end = $_GET['date_end'] ?? '';
+$high_production = $_GET['high_production'] ?? '';
 $where = '';
 
+// Apply date filter conditions
 if (!empty($date_start) && !empty($date_end)) {
     $where = "WHERE date BETWEEN '{$date_start}' AND '{$date_end}'";
+}
+
+// Set sorting order for production
+if ($high_production == 'highest') {
+    $order_by = "ORDER BY quantity DESC, date DESC";
+} elseif ($high_production == 'lowest') {
+    $order_by = "ORDER BY quantity ASC, date ASC";
+} else {
+    $order_by = "ORDER BY date DESC"; // Default sorting
 }
 ?>
 
@@ -45,8 +56,16 @@ if (!empty($date_start) && !empty($date_end)) {
                     <label><strong>Date End</strong></label>
                     <input type="date" id="date_end" class="form-control form-control-sm" value="<?= $date_end ?>">
                 </div>
+                <div class="col-md-3">
+                    <label><strong>Filter Quantity</strong></label>
+                    <select id="high_production_filter" class="form-control form-control-sm">
+                        <option value="">Default (Newest First)</option>
+                        <option value="highest" <?= $high_production == 'highest' ? 'selected' : '' ?>>Highest Production</option>
+                        <option value="lowest" <?= $high_production == 'lowest' ? 'selected' : '' ?>>Lowest Production</option>
+                    </select>
+                </div>
                 <div class="col-md-2 align-self-end">
-                    <button class="btn btn-sm btn-primary btn-block" id="filter_btn"><i class="fas fa-filter"></i> Filter</button>
+                    <button class="btn btn-sm btn-primary btn-block" id="filter_btn"><i class="fas fa-filter"></i> Apply Filters</button>
                 </div>
             </div>
 
@@ -63,14 +82,16 @@ if (!empty($date_start) && !empty($date_end)) {
                     <tr>
                         <th class="text-center">#</th>
                         <th class="text-center"><i class="fas fa-calendar-alt"></i> Date</th>
-                        <th class="text-center"><i class="fas fa-box"></i> Quantity (Jars)</th>
+                        <th class="text-center"><i class="fas fa-box"></i> Quantity (Jars) 
+                            <i class="fas fa-arrow-down text-primary"></i>
+                        </th>
                         <th class="text-center"><i class="fas fa-cogs"></i> Action</th>
                     </tr>
                 </thead>
                 <tbody style="background-color: white; color: black;">
                     <?php 
                     $i = 1;
-                    $qry = $conn->query("SELECT * FROM production $where ORDER BY date DESC");
+                    $qry = $conn->query("SELECT * FROM production $where $order_by");
                     if($qry && $qry->num_rows > 0):
                         while($row = $qry->fetch_assoc()):
                     ?>
@@ -95,42 +116,12 @@ if (!empty($date_start) && !empty($date_end)) {
                     else:
                     ?>
                     <tr>
-                        <td colspan="4" class="text-center text-muted">No production records found for the selected date range.</td>
+                        <td colspan="4" class="text-center text-muted">No production records found for the selected criteria.</td>
                     </tr>
                     <?php endif; ?>
                 </tbody>
             </table>
         </div>
-    </div>
-</div>
-
-<!-- Production Modal -->
-<div class="modal fade" id="productionModal">
-    <div class="modal-dialog">
-        <form id="production-form" class="modal-content">
-            <div class="modal-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h5 class="modal-title"><i class="fas fa-plus-circle"></i> Add Production</h5>
-                <button class="btn btn-sm btn-light border-dark ml-auto" id="view_production" type="button">
-                    <i class="fas fa-box"></i> Production
-                </button>
-                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" name="id">
-                <div class="form-group">
-                    <label class="text-dark"><i class="fas fa-calendar-alt"></i> Date</label>
-                    <input type="date" name="date" class="form-control form-control-sm border-primary" required>
-                </div>
-                <div class="form-group">
-                    <label class="text-dark"><i class="fas fa-box"></i> Quantity</label>
-                    <input type="number" name="quantity" class="form-control form-control-sm border-primary" required min="1" placeholder="Enter number of jars">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-sm btn-primary" type="submit"><i class="fas fa-save"></i> Save</button>
-                <button class="btn btn-sm btn-secondary" type="button" data-dismiss="modal"><i class="fas fa-times"></i> Cancel</button>
-            </div>
-        </form>
     </div>
 </div>
 
@@ -172,24 +163,12 @@ $('#production-form').submit(function(e){
     });
 });
 
-$('#production-table').on('click', '.delete-production', function(){
-    const id = $(this).data('id');
-    if(confirm("Are you sure you want to delete this production entry?")) {
-        $.ajax({
-            url: '../classes/Master.php?f=delete_production',
-            method: 'POST',
-            data: { id: id },
-            dataType: 'json',
-            success: function(resp){
-                if(resp.status === 'success'){
-                    alert_toast('Production entry deleted.', 'success');
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    alert_toast('Error deleting production entry.', 'error');
-                }
-            }
-        });
-    }
+$('#high_production_filter').change(function(){
+    const productionOrder = $(this).val();
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('high_production', productionOrder);
+    window.history.replaceState({}, '', '?' + urlParams.toString());
+    location.reload();
 });
 
 $('#filter_btn').click(function(){

@@ -67,43 +67,63 @@ class Master extends DBConnection {
     function save_sales() {
         extract($_POST);
         $data = "";
+        
+        // Prepare the sales data (excluding arrays and non-column fields)
         foreach ($_POST as $k => $v) {
-            if (!in_array($k, ['id', 'password']) && !is_array($v)) {
+            if (!in_array($k, ['id', 'password', 'quantity', 'jar_type_id', 'price', 'total_amount']) && !is_array($v)) {
                 if (!empty($data)) $data .= ", ";
-                $data .= " {$k} = '{$v}' ";
+                $v = $this->conn->real_escape_string($v); // Prevent SQL injection
+                $data .= " `{$k}` = '{$v}' ";
             }
         }
+    
+        // Insert or Update the sales record
         if (empty($id)) {
-            $sql = "INSERT INTO `sales` set {$data}";
+            $sql = "INSERT INTO `sales` SET {$data}";
         } else {
-            $sql = "UPDATE `sales` set {$data} where id = {$id}";
+            $sql = "UPDATE `sales` SET {$data} WHERE id = {$id}";
         }
+    
         $save = $this->conn->query($sql);
         $this->capture_err();
-
+    
         if ($save) {
             $id = empty($id) ? $this->conn->insert_id : $id;
+    
+            // Clear old sales items
+            $this->conn->query("DELETE FROM sales_items WHERE sales_id = '{$id}'");
+    
+            // Re-insert sales items
             $data = "";
-            $this->conn->query("DELETE FROM sales_items where sales_id = '{$id}'");
             for ($i = 0; $i < count($quantity); $i++) {
                 if (!empty($data)) $data .= ", ";
-                $data .= "('{$id}','{$jar_type_id[$i]}','{$quantity[$i]}','{$price[$i]}','{$total_amount[$i]}')";
+                $sales_id = $this->conn->real_escape_string($id);
+                $jar_id = $this->conn->real_escape_string($jar_type_id[$i]);
+                $qty = $this->conn->real_escape_string($quantity[$i]);
+                $price_val = $this->conn->real_escape_string($price[$i]);
+                $total_val = $this->conn->real_escape_string($total_amount[$i]);
+                $data .= "('{$sales_id}','{$jar_id}','{$qty}','{$price_val}','{$total_val}')";
             }
+    
             $sql2 = $this->conn->query("INSERT INTO `sales_items` (`sales_id`,`jar_type_id`,`quantity`,`price`,`total_amount`) VALUES {$data}");
+            
             if ($sql2) {
-                $this->settings->set_flashdata("success", " Sales Transaction successfully saved");
+                $this->settings->set_flashdata("success", "Sales Transaction successfully saved");
                 $resp['status'] = 'success';
             } else {
                 $resp['status'] = 'failed';
-                $resp['msg'] = "An error occurred while saving the data";
+                $resp['msg'] = "An error occurred while saving the sales items.";
                 $resp['error'] = $this->conn->error;
             }
+    
         } else {
             $resp['status'] = 'failed';
-            $resp['msg'] = "An error occurred while saving the data";
+            $resp['msg'] = "An error occurred while saving the sales data.";
             $resp['error'] = $this->conn->error;
         }
+    
         return json_encode($resp);
+    
     }
 
     function delete_sales() {

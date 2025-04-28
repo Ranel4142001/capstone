@@ -5,7 +5,7 @@ if(isset($_GET['id']) && $_GET['id'] > 0){
         foreach($qry->fetch_assoc() as $k => $v){
             $$k=$v;
         }
-}
+    }
 }
 ?>
 <?php if($_settings->chk_flashdata('success')): ?>
@@ -15,7 +15,7 @@ if(isset($_GET['id']) && $_GET['id'] > 0){
 <?php endif;?>
 <div class="card card-outline card-primary">
     <div class="card-header">
-    <h3 class="card-title"><?php echo !isset($id) ? "Create New" : "Manage" ?> Sale</h3>
+        <h3 class="card-title"><?php echo !isset($id) ? "Create New" : "Manage" ?> Sale</h3>
     </div>
     <div class="card-body">
         <div class="container-fluid">
@@ -24,34 +24,43 @@ if(isset($_GET['id']) && $_GET['id'] > 0){
                 <div class="row">
                     <div class="form-group col-sm-6">
                         <label class="control-label">Customer Name</label>
-                        <input type="text" name="customer_name" class="form-control" id="customer_name" value="<?php echo isset($customer_name) ?  $customer_name : "Guest" ?>" reqiured>
+                        <input type="text" name="customer_name" class="form-control" id="customer_name" value="<?php echo isset($customer_name) ?  $customer_name : "Guest" ?>" required>
                     </div>
                     <div class="form-group col-sm-6">
                         <label class="control-label">Type</label>
-                        <select  id="type" name="type" class="custom-select select2">
+                        <select id="type" name="type" class="custom-select select2">
                             <option value="1" <?php echo isset($type) && $type == 1 ? "selected" : "" ?>>Walk-In</option>
                             <option value="2" <?php echo isset($type) && $type == 2 ? "selected" : "" ?>>For Delivery</option>
                         </select>
-
                     </div>
                 </div>
+
                 <div class="row" style="display:none" id="da-holder">
                     <div class="form-group col-sm-6">
                         <label class="control-label">Delivery Address</label>
                         <textarea type="text" rows="2" style="resize:none" name="delivery_address" class="form-control" id="delivery_address"><?php echo isset($delivery_address) ?  $delivery_address : "" ?></textarea>
                     </div>
                 </div>
+
+                <!-- ✅ Date Created Field -->
+                <div class="row">
+                    <div class="form-group col-sm-6">
+                        <label class="control-label">Date Created</label>
+                        <input type="date" name="date_created" class="form-control" value="<?php echo isset($date_created) ? date('Y-m-d', strtotime($date_created)) : date('Y-m-d') ?>" required>
+                    </div>
+                </div>
+
                 <hr>
                 <div class="row align-items-end">
                     <div class="form-group col-sm-4">
                         <label class="control-label">Jar Type</label>
-                        <select  id="jar_type_id" class="custom-select select2">
+                        <select id="jar_type_id" class="custom-select select2">
                             <option value=""></option>
                             <?php 
-                            $j_qry = $conn->query("SELECT * FROM jar_types order by `name` asc");
-                            while($row=$j_qry->fetch_assoc()):
+                            $j_qry = $conn->query("SELECT * FROM jar_types ORDER BY `name` ASC");
+                            while($row = $j_qry->fetch_assoc()):
                             ?>
-                            <option value="<?php echo $row['id'] ?>" data-price="<?php echo $row['pricing'] ?>" ><?php echo $row['name'] ?></option>
+                            <option value="<?php echo $row['id'] ?>" data-price="<?php echo $row['pricing'] ?>"><?php echo $row['name'] ?></option>
                             <?php endwhile; ?>
                         </select>
                     </div>
@@ -63,6 +72,7 @@ if(isset($_GET['id']) && $_GET['id'] > 0){
                         <button class="btn btn-primary btn-flat" type="button" id="add_to_list"><i class="fa fa-plus"></i> Add</button>
                     </div>
                 </div>
+
                 <hr>
                 <table class="table table-bordered table-striped" id="item-list">
                     <colgroup>
@@ -84,8 +94,8 @@ if(isset($_GET['id']) && $_GET['id'] > 0){
                     <tbody>
                         <?php 
                         if(isset($id)):
-                        $qry2 = $conn->query("SELECT i.*,j.name FROM `sales_items` i inner join `jar_types`j on j.id = i.jar_type_id where  i.sales_id = '{$id}' order by id asc ");
-                        while($row= $qry2->fetch_assoc()):
+                        $qry2 = $conn->query("SELECT i.*,j.name FROM `sales_items` i INNER JOIN `jar_types` j ON j.id = i.jar_type_id WHERE i.sales_id = '{$id}' ORDER BY id ASC");
+                        while($row = $qry2->fetch_assoc()):
                         ?>
                         <tr class="s-item">
                             <td class='text-center'><button class='btn btn-default text-danger' type='button' onclick='del_item($(this))'><i class='fa fa-times'></i></button></td>
@@ -94,10 +104,7 @@ if(isset($_GET['id']) && $_GET['id'] > 0){
                             <td class='text-center'><input type='hidden' name='price[]' value='<?php echo $row['price'] ?>'><?php echo number_format($row['price']) ?></td>
                             <td class='text-center'><input type='hidden' name='total_amount[]' value='<?php echo $row['total_amount'] ?>'><?php echo number_format($row['total_amount']) ?></td>
                         </tr>
-                        <?php
-                            endwhile;
-                            endif;
-                        ?>
+                        <?php endwhile; endif; ?>
                     </tbody>
                     <tfoot>
                         <tr>
@@ -106,10 +113,11 @@ if(isset($_GET['id']) && $_GET['id'] > 0){
                         </tr>
                     </tfoot>
                 </table>
+
                 <hr>
                 <div class="form-group col-sm-4">
                     <label class="control-label">Payment Status</label>
-                    <select  id="status" name="status" class="custom-select">
+                    <select id="status" name="status" class="custom-select">
                         <option value="0" <?php echo isset($status) && $status == 0 ? "selected" : "" ?>>Unpaid</option>
                         <option value="1" <?php echo isset($status) && $status == 1 ? "selected" : "" ?>>Paid</option>
                     </select>
@@ -124,101 +132,107 @@ if(isset($_GET['id']) && $_GET['id'] > 0){
         </div>
     </div>
 </div>
+
 <script>
     function calculate_total(){
-        total = 0 ; 
+        let total = 0; 
         $('.s-item').each(function(){
-            var amount = $(this).find('[name="total_amount[]"]').val()
-            total += parseFloat(amount)
-        })
-        $('#grand_total').text(parseFloat(total).toLocaleString('en-US'))
-        $('[name="amount"]').val(total)
+            var amount = $(this).find('[name="total_amount[]"]').val();
+            total += parseFloat(amount);
+        });
+        $('#grand_total').text(parseFloat(total).toLocaleString('en-US'));
+        $('[name="amount"]').val(total);
     }
+
     function del_item(_this){
-        _this.closest('tr').remove()
+        _this.closest('tr').remove();
         calculate_total();
     }
+
     $(function(){
         if('<?php echo isset($id) ? 1 : 0 ?>' == 1){
-            calculate_total()
+            calculate_total();
             if($('#type').val() == 1){
-                $('#da-holder').hide('slow')
-                $('#delivery_address').attr('required',false)
-            }else{
-                $('#da-holder').show('slow')
-                $('#delivery_address').attr('required',true)
+                $('#da-holder').hide('slow');
+                $('#delivery_address').attr('required', false);
+            } else {
+                $('#da-holder').show('slow');
+                $('#delivery_address').attr('required', true);
             }
         }
+
         $('#type').change(function(){
             if($(this).val() == 1){
-                $('#da-holder').hide('slow')
-                $('#delivery_address').attr('required',false)
-            }else{
-                $('#da-holder').show('slow')
-                $('#delivery_address').attr('required',true)
+                $('#da-holder').hide('slow');
+                $('#delivery_address').attr('required', false);
+            } else {
+                $('#da-holder').show('slow');
+                $('#delivery_address').attr('required', true);
             }
-        })
-       $('.select2').select2();
-       $('#add_to_list').click(function(){
+        });
+
+        $('.select2').select2();
+
+        $('#add_to_list').click(function(){
             var jar_type_id = $('#jar_type_id').val();
             var quantity = $('#quantity').val();
             if(jar_type_id == ''){
-                alert_toast(' Please Select Jar Type first',"warning");
+                alert_toast(' Please Select Jar Type first', "warning");
                 return false;
             }
             if(quantity <= 0){
-                alert_toast(' Please enter valid quantity',"warning");
+                alert_toast(' Please enter valid quantity', "warning");
                 return false;
             }
-            var jar_type = $('#jar_type_id option[value="'+jar_type_id+'"]').text()
-            var price = $('#jar_type_id option[value="'+jar_type_id+'"]').attr('data-price')
+            var jar_type = $('#jar_type_id option[value="'+jar_type_id+'"]').text();
+            var price = $('#jar_type_id option[value="'+jar_type_id+'"]').attr('data-price');
 
             var amount = parseFloat(quantity) * parseFloat(price);
-            var tr = $('<tr class="s-item">')
-            tr.append("<td class='text-center'><button class='btn btn-default text-danger' type='button' onclick='del_item($(this))'><i class='fa fa-times'></i></button></td>")
-            tr.append("<td class='text-center'><input type='hidden' name='quantity[]' value='"+quantity+"'>"+(parseFloat(quantity).toLocaleString("en-US"))+"</td>")
-            tr.append("<td class='text-center'><input type='hidden' name='jar_type_id[]' value='"+jar_type_id+"'>"+(jar_type)+"</td>")
-            tr.append("<td class='text-center'><input type='hidden' name='price[]' value='"+price+"'>"+(parseFloat(price).toLocaleString("en-US"))+"</td>")
-            tr.append("<td class='text-center'><input type='hidden' name='total_amount[]' value='"+amount+"'>"+(parseFloat(amount).toLocaleString("en-US"))+"</td>")
+            var tr = $('<tr class="s-item">');
+            tr.append("<td class='text-center'><button class='btn btn-default text-danger' type='button' onclick='del_item($(this))'><i class='fa fa-times'></i></button></td>");
+            tr.append("<td class='text-center'><input type='hidden' name='quantity[]' value='"+quantity+"'>"+(parseFloat(quantity).toLocaleString("en-US"))+"</td>");
+            tr.append("<td class='text-center'><input type='hidden' name='jar_type_id[]' value='"+jar_type_id+"'>"+(jar_type)+"</td>");
+            tr.append("<td class='text-center'><input type='hidden' name='price[]' value='"+price+"'>"+(parseFloat(price).toLocaleString("en-US"))+"</td>");
+            tr.append("<td class='text-center'><input type='hidden' name='total_amount[]' value='"+amount+"'>"+(parseFloat(amount).toLocaleString("en-US"))+"</td>");
             $('#item-list tbody').append(tr);
             calculate_total();
             $('#quantity').val('');
             $('#jar_type_id').val('').trigger('change');
-       })
-       
+        });
+
         $('#sales-form').submit(function(e){
-            e.preventDefault()
+            e.preventDefault();
             if($('.s-item').length < 1){
-                alert_toast(" Please add atleast 1 Item in the list.","warning");
+                alert_toast(" Please add at least 1 Item in the list.", "warning");
                 return false;
             }
-            start_loader()
+            start_loader();
             if($('.err_msg').length > 0)
-                $('.err_msg').remove()
+                $('.err_msg').remove();
             $.ajax({
-                url:_base_url_+'classes/Master.php?f=save_sales',
-                method:'POST',
-                data:$(this).serialize(),
-                dataType:'json',
-                error:err=>{
-                    console.log(err)
-                    alert_toast("An error occured","error")
-                    end_loader()
+                url: _base_url_ + 'classes/Master.php?f=save_sales',
+                method: 'POST',
+                data: $(this).serialize(),
+                dataType: 'json',
+                error: err => {
+                    console.log(err);
+                    alert_toast("An error occurred", "error");
+                    end_loader();
                 },
-                success:function(resp){
+                success: function(resp){
                     if(resp.status == 'success'){
                         location.href = './?page=sales';
-                    }else if(!!resp.msg){
-                         var msg = $('<div class="err_msg"><div class="alert alert-danger">'+resp.msg+'</div></div>')
-                         $('#sales-form').prepend(msg) 
-                         msg.show('slow')
-                    }else{
-                        alert_toast('An error occured',"error")
-                        console.log(resp)
+                    } else if(!!resp.msg){
+                        var msg = $('<div class="err_msg"><div class="alert alert-danger">'+resp.msg+'</div></div>');
+                        $('#sales-form').prepend(msg); 
+                        msg.show('slow');
+                    } else {
+                        alert_toast('An error occurred', "error");
+                        console.log(resp);
                     }
-                    end_loader()
+                    end_loader();
                 }
-            })
-        })
-    })
+            });
+        });
+    });
 </script>

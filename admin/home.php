@@ -12,7 +12,7 @@
                 <span class="info-box-text">Total Sales Today</span>
                 <span class="info-box-box text-right">
                   <?php 
-                    echo number_format($conn->query("SELECT sum(amount) as total FROM sales where date(date_created) = '".(date('Y-m-d'))."' ")->fetch_array()['total']);
+                    echo "₱" . number_format($conn->query("SELECT sum(amount) as total FROM sales where date(date_created) = '".(date('Y-m-d'))."' ")->fetch_array()['total'], 2);
                   ?>
                 </span>
               </div>
@@ -20,5 +20,4 @@
             </div>
             <!-- /.info-box -->
           </div>
-          
 </div>
