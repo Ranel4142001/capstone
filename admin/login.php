@@ -16,8 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Save user info to session
             $_SESSION['userdata'] = $user;
            
-    header("Location: /water_refilling/admin/index.php");
-    exit();
+            header("Location: /water_refilling/admin/index.php");
+            exit();
         } else {
             $error = "Incorrect password.";
         }
@@ -63,8 +63,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <div class="input-group mb-3">
-          <input type="password" class="form-control custom-input" name="password" placeholder="Password" required>
-          <div class="input-group-append"><span class="input-group-text fas fa-lock"></span></div>
+          <!-- Added id property for toggle functionality -->
+          <input type="password" id="password-field" class="form-control custom-input" name="password" placeholder="Password" required>
+          <div class="input-group-append">
+            <!-- Added a clickable lock icon for view/hide -->
+            <span class="input-group-text">
+              <i class="fas fa-lock toggle-password" style="cursor: pointer;"></i>
+            </span>
+          </div>
         </div>
 
         <div class="row">
@@ -75,12 +81,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </form>
 
       <div class="text-center mt-2">
-
-    <small class="text-muted">
-        <a href="../forgotpassword/index.php" class="text-muted">Forgot Password?</a>
-    </small>
-
-</div>
+        <small class="text-muted">
+            <a href="../forgotpassword/index.php" class="text-muted">Forgot Password?</a>
+        </small>
+      </div>
 
 <!-- Styles -->
 <style>
@@ -112,6 +116,21 @@ body { background: linear-gradient(180deg, #007bff 0%, #004094 100%); }
 <script src="plugins/jquery/jquery.min.js"></script>
 <script src="plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="dist/js/adminlte.min.js"></script>
+
+<!-- Added script for toggling password visibility -->
+<script>
+$(document).ready(function(){
+    $('.toggle-password').click(function(){
+        var passwordField = $('#password-field');
+        // Toggle field type between password and text
+        var type = passwordField.attr('type') === 'password' ? 'text' : 'password';
+        passwordField.attr('type', type);
+        // Toggle icon between lock and unlock
+        $(this).toggleClass('fa-lock fa-unlock-alt');
+    });
+});
+</script>
+
 <script> $(document).ready(function(){ end_loader(); }); </script>
 </body>
 </html>
