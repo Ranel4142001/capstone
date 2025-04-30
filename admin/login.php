@@ -55,19 +55,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <?php if (!empty($error)): ?>
         <div class="alert alert-danger text-sm"><?= $error ?></div>
       <?php endif; ?>
-<<<<<<< HEAD
-=======
-
-      <form method="POST" action="login.php">
-<div class="input-group mb-3">
-  <input type="text" class="form-control custom-input" name="username" placeholder="Username" required>
-  <div class="input-group-append">
-    <span class="input-group-text icon-background">
-      <i class="fas fa-user"></i>
-    </span>
-  </div>
-</div>
->>>>>>> 46f1e76b5dba2fd37d76e88ae0fe5c8704fde6f9
 
       <form id="login-frm" action="" method="post">
         <div class="input-group mb-3">
@@ -88,16 +75,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </form>
 
       <div class="text-center mt-2">
-<<<<<<< HEAD
-        <small class="text-muted">Forgot Password?</small>
-      </div>
-    </div>
-  </div>
-=======
+
     <small class="text-muted">
         <a href="../forgotpassword/index.php" class="text-muted">Forgot Password?</a>
     </small>
->>>>>>> 46f1e76b5dba2fd37d76e88ae0fe5c8704fde6f9
+
 </div>
 
 <!-- Styles -->
