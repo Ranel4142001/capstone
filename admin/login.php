@@ -4,6 +4,27 @@ session_start();
 require_once('../config.php');
 
 
+// Handle login form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = $_POST['username'] ?? '';
+    $password = $_POST['password'] ?? '';
+
+    $qry = $conn->query("SELECT * FROM users WHERE username = '{$conn->real_escape_string($username)}'");
+    if ($qry && $qry->num_rows > 0) {
+        $user = $qry->fetch_assoc();
+        if (password_verify($password, $user['password'])) {
+            // Save user info to session
+            $_SESSION['userdata'] = $user;
+           
+    header("Location: /water_refilling/admin/index.php");
+    exit();
+        } else {
+            $error = "Incorrect password.";
+        }
+    } else {
+        $error = "Username not found.";
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -34,24 +55,17 @@ require_once('../config.php');
       <?php if (!empty($error)): ?>
         <div class="alert alert-danger text-sm"><?= $error ?></div>
       <?php endif; ?>
-<div class="input-group mb-3">
-  <input type="text" class="form-control custom-input" name="username" placeholder="Username" required>
-  <div class="input-group-append">
-    <span class="input-group-text icon-background">
-      <i class="fas fa-user"></i>
-    </span>
-  </div>
-</div>
 
-<div class="input-group mb-3">
-  <input type="password" class="form-control custom-input" name="password" id="password" placeholder="Password" required>
-  <div class="input-group-append">
-    <span class="input-group-text icon-background toggle-password" id="togglePassword">
-      <i class="fas fa-lock"></i>
-    </span>
-  </div>
-</div>
+      <form id="login-frm" action="" method="post">
+        <div class="input-group mb-3">
+          <input type="text" class="form-control custom-input" name="username" placeholder="Username" required>
+          <div class="input-group-append"><span class="input-group-text fas fa-user"></span></div>
+        </div>
 
+        <div class="input-group mb-3">
+          <input type="password" class="form-control custom-input" name="password" placeholder="Password" required>
+          <div class="input-group-append"><span class="input-group-text fas fa-lock"></span></div>
+        </div>
 
         <div class="row">
           <div class="col-12 mb-2">
@@ -61,11 +75,11 @@ require_once('../config.php');
       </form>
 
       <div class="text-center mt-2">
-    <small class="text-muted">
-        <a href="../forgotpassword/forgot_password.php" class="text-muted">Forgot Password?</a>
-    </small>
+        <small class="text-muted">Forgot Password?</small>
+      </div>
+    </div>
+  </div>
 </div>
-
 
 <!-- Styles -->
 <style>
@@ -92,37 +106,6 @@ body { background: linear-gradient(180deg, #007bff 0%, #004094 100%); }
 }
 .text-light { color: #ffffff !important; }
 </style>
-
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-$(document).ready(function () {
-    $("#togglePassword").click(function () {
-        $.ajax({
-            type: "POST",
-            url: "toggle_password.php",
-            data: { toggle: true },
-            success: function (response) {
-                var passwordField = $("#password");
-                var icon = $("#togglePassword i");
-
-                if (passwordField.attr("type") === "password") {
-                    passwordField.attr("type", "text"); // Show password
-                    icon.removeClass("fa-lock").addClass("fa-unlock-alt"); // Change icon
-                } else {
-                    passwordField.attr("type", "password"); // Hide password
-                    icon.removeClass("fa-unlock-alt").addClass("fa-lock"); // Change back
-                }
-            },
-            error: function () {
-                console.log("Error processing request.");
-            }
-        });
-    });
-});
-</script>
-
-
 
 <!-- Scripts -->
 <script src="plugins/jquery/jquery.min.js"></script>
