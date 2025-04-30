@@ -34,6 +34,8 @@ require_once('../config.php');
       <?php if (!empty($error)): ?>
         <div class="alert alert-danger text-sm"><?= $error ?></div>
       <?php endif; ?>
+
+      <form method="POST" action="login.php">
 <div class="input-group mb-3">
   <input type="text" class="form-control custom-input" name="username" placeholder="Username" required>
   <div class="input-group-append">
@@ -62,7 +64,7 @@ require_once('../config.php');
 
       <div class="text-center mt-2">
     <small class="text-muted">
-        <a href="../forgotpassword/forgot_password.php" class="text-muted">Forgot Password?</a>
+        <a href="../forgotpassword/index.php" class="text-muted">Forgot Password?</a>
     </small>
 </div>
 
