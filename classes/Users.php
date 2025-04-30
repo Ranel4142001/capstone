@@ -20,10 +20,11 @@ Class Users extends DBConnection {
 			}
 		}
 		if(!empty($password) && !empty($id)){
-			$password = md5($password);
+			$password = password_hash($password, PASSWORD_DEFAULT); // Secure hashing
 			if(!empty($data)) $data .=" , ";
 			$data .= " `password` = '{$password}' ";
 		}
+		
 
 		if(isset($_FILES['img']) && $_FILES['img']['tmp_name'] != ''){
 				$fname = 'uploads/'.strtotime(date('y-m-d H:i')).'_'.$_FILES['img']['name'];
@@ -109,21 +110,78 @@ Class Users extends DBConnection {
 			}
 
 	} 
+	public function update_user(){
+		extract($_POST);
 	
+		// ✅ Ensure ID exists before updating
+		if (empty($id)) {
+			return json_encode(["error" => "No user ID provided"]);
+		}
+	
+		$data = [];
+		foreach($_POST as $k => $v){
+			if (!in_array($k, ["id", "password"])) {
+				$data[] = "`{$k}` = '{$this->conn->real_escape_string($v)}'";
+			}
+		}
+	
+		// ✅ Hash new password if provided
+		if (!empty($password)) {
+			$hashed_password = password_hash($password, PASSWORD_DEFAULT);
+			$data[] = "`password` = '{$hashed_password}'";
+		}
+	
+		// ✅ Handle Avatar Upload
+		if (isset($_FILES['img']) && $_FILES['img']['tmp_name'] != '') {
+			$fname = 'uploads/'.strtotime(date('y-m-d H:i')).'_'.$_FILES['img']['name'];
+			if (move_uploaded_file($_FILES['img']['tmp_name'], '../'. $fname)) {
+				$data[] = "`avatar` = '{$fname}'";
+				if (isset($_SESSION['userdata']['avatar']) && is_file('../'.$_SESSION['userdata']['avatar'])) {
+					unlink('../'.$_SESSION['userdata']['avatar']);
+				}
+			}
+		}
+	
+		// ✅ Build & Execute SQL Query
+		$sql = "UPDATE users SET " . implode(", ", $data) . " WHERE id = '{$id}'";
+		$qry = $this->conn->query($sql);
+	
+		if ($qry) {
+			$this->settings->set_flashdata('success', 'User details successfully updated.');
+			foreach ($_POST as $k => $v) {
+				if (!in_array($k, ["id", "password"])) {
+					$this->settings->set_userdata($k, $v);
+				}
+			}
+	
+			if (isset($fname)) {
+				$this->settings->set_userdata('avatar', $fname);
+			}
+	
+			return 1;
+		} else {
+			return json_encode(["error" => $this->conn->error]); // Debugging error message
+		}
+	}
 }
 
 $users = new users();
 $action = !isset($_GET['f']) ? 'none' : strtolower($_GET['f']);
 switch ($action) {
-	case 'save':
-		echo $users->save_users();
-	break;
-	case 'save_client':
-		echo $users->save_client();
-	break;
-		echo $users->delete_users();
-	break;
-	default:
-		// echo $sysset->index();
-		break;
+    case 'save':
+        echo $users->save_users();
+        break;
+    case 'update':
+        echo $users->update_user();
+        break;
+    case 'save_client':
+        echo $users->save_client();
+        break;
+    case 'delete':
+        echo $users->delete_users();
+        break;
+    default:
+        echo json_encode(["error" => "Invalid action"]);
+        break;
 }
+

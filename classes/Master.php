@@ -139,6 +139,92 @@ class Master extends DBConnection {
         return json_encode($resp);
     }
 
+    public function send_reset_code() {
+        extract($_POST);
+        $resp = ['status' => 'failed'];
+        $email = $this->conn->real_escape_string($email);
+        $qry = $this->conn->query("SELECT * FROM users WHERE email = '{$email}'");
+
+        if ($qry->num_rows > 0) {
+            $code = rand(100000, 999999);
+            $expiry = date("Y-m-d H:i:s", strtotime("+10 minutes"));
+            $this->conn->query("UPDATE users SET reset_code = '{$code}', reset_code_expires = '{$expiry}' WHERE email = '{$email}'");
+
+            // Send email using PHPMailer
+            require_once(__DIR__ . '/../includes/PHPMailer/PHPMailerAutoload.php');
+            $mail = new PHPMailer;
+            $mail->isSMTP();
+            $mail->Host = 'smtp.yourserver.com'; // Update this
+            $mail->SMTPAuth = true;
+            $mail->Username = 'your_email@example.com'; // Update this
+            $mail->Password = 'your_password'; // Update this
+            $mail->SMTPSecure = 'tls';
+            $mail->Port = 587;
+
+            $mail->setFrom('your_email@example.com', 'AquaTrack');
+            $mail->addAddress($email);
+            $mail->Subject = 'AquaTrack Password Reset Code';
+            $mail->isHTML(true);
+            $mail->Body = "Your verification code is: <b>{$code}</b><br>It will expire in 10 minutes.";
+
+            if ($mail->send()) {
+                $resp['status'] = 'success';
+            } else {
+                $resp['error'] = 'Failed to send email.';
+            }
+        } else {
+            $resp['error'] = 'Email not found.';
+        }
+
+        return json_encode($resp);
+    }
+
+    // Verify Reset Code
+    public function verify_code() {
+        extract($_POST);
+        $resp = ['status' => 'failed'];
+        $qry = $this->conn->query("SELECT * FROM users WHERE email = '{$email}' AND reset_code = '{$code}'");
+
+        if ($qry->num_rows > 0) {
+            $user = $qry->fetch_assoc();
+            if (strtotime($user['reset_code_expires']) >= time()) {
+                $_SESSION['reset_email'] = $email;
+                $resp['status'] = 'success';
+            } else {
+                $resp['error'] = 'Code expired.';
+            }
+        } else {
+            $resp['error'] = 'Invalid code.';
+        }
+        return json_encode($resp);
+    }
+
+    // Reset Password
+    public function reset_password() {
+        extract($_POST);
+        $resp = ['status' => 'failed'];
+
+        if (!isset($_SESSION['reset_email'])) {
+            $resp['error'] = 'Unauthorized.';
+            return json_encode($resp);
+        }
+
+        $email = $_SESSION['reset_email'];
+        $password = md5($password);
+        $qry = $this->conn->query("UPDATE users SET password = '{$password}', reset_code = NULL, reset_code_expires = NULL WHERE email = '{$email}'");
+
+        if ($qry) {
+            unset($_SESSION['reset_email']);
+            $resp['status'] = 'success';
+        } else {
+            $resp['error'] = 'Password reset failed.';
+        }
+
+        return json_encode($resp);
+    }
+    
+
+
       // Save or Update Production
 	  function save_production() {
         extract($_POST);
@@ -184,11 +270,13 @@ class Master extends DBConnection {
 
 }
 
+// === ROUTING ===
 $Master = new Master();
 $action = !isset($_GET['f']) ? 'none' : strtolower($_GET['f']);
 $sysset = new SystemSettings();
 
 switch ($action) {
+    // Existing operations (save_jar_types, delete_jar_types, etc.)
     case 'save_jar_types':
         echo $Master->save_jar_types();
         break;
@@ -207,6 +295,18 @@ switch ($action) {
     case 'delete_production':
         echo $Master->delete_production();
         break;
+
+    // ✅ Forgot Password Actions
+    case 'send_reset_code':
+        echo $Master->send_reset_code();
+        break;
+    case 'verify_code':
+        echo $Master->verify_code();
+        break;
+    case 'reset_password':
+        echo $Master->reset_password();
+        break;
+
     default:
         // echo $sysset->index();
         break;
