@@ -84,9 +84,10 @@
   transition: background-color 0.3s ease;
   }
 
-  .btn-primary:hover {
-  background-color: #1e88e5;
-  }
+  .btn.btn-primary:hover {
+  color: black !important;
+  font-weight: bold; /* optional: makes the text bold on hover */
+}
 
   .input-group .form-control {
   border-radius: 20px;
