@@ -44,7 +44,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && $step === 'reset') {
         body {
             margin: 0;
             padding: 0;
-            background: linear-gradient(to right, #007BFF, #00AEEF);
+            /* Changed background to a dirty white color */
+            background-color:rgba(232, 238, 240, 0.9);
             font-family: 'Segoe UI', sans-serif;
             height: 100vh;
             display: flex;
