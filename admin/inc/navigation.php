@@ -33,8 +33,7 @@
                     </li> 
                     <li class="nav-item dropdown">
                       <a href="<?php echo base_url ?>admin/?page=stocks" class="nav-link nav-stocks">
-                      <i class="nav-icon fas fa-industry"></i>
-
+                      <i class="nav-icon fas fa-warehouse"></i>
                         <p>
                           Stocks
                         </p>

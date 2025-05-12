@@ -67,7 +67,7 @@ class Master extends DBConnection {
     function save_sales() {
         extract($_POST);
         $data = "";
-        
+
         // Prepare the sales data (excluding arrays and non-column fields)
         foreach ($_POST as $k => $v) {
             if (!in_array($k, ['id', 'password', 'quantity', 'jar_type_id', 'price', 'total_amount']) && !is_array($v)) {
@@ -76,23 +76,23 @@ class Master extends DBConnection {
                 $data .= " `{$k}` = '{$v}' ";
             }
         }
-    
+
         // Insert or Update the sales record
         if (empty($id)) {
             $sql = "INSERT INTO `sales` SET {$data}";
         } else {
             $sql = "UPDATE `sales` SET {$data} WHERE id = {$id}";
         }
-    
+
         $save = $this->conn->query($sql);
         $this->capture_err();
-    
+
         if ($save) {
             $id = empty($id) ? $this->conn->insert_id : $id;
-    
+
             // Clear old sales items
             $this->conn->query("DELETE FROM sales_items WHERE sales_id = '{$id}'");
-    
+
             // Re-insert sales items
             $data = "";
             for ($i = 0; $i < count($quantity); $i++) {
@@ -104,9 +104,9 @@ class Master extends DBConnection {
                 $total_val = $this->conn->real_escape_string($total_amount[$i]);
                 $data .= "('{$sales_id}','{$jar_id}','{$qty}','{$price_val}','{$total_val}')";
             }
-    
+
             $sql2 = $this->conn->query("INSERT INTO `sales_items` (`sales_id`,`jar_type_id`,`quantity`,`price`,`total_amount`) VALUES {$data}");
-            
+
             if ($sql2) {
                 $this->settings->set_flashdata("success", "Sales Transaction successfully saved");
                 $resp['status'] = 'success';
@@ -115,15 +115,15 @@ class Master extends DBConnection {
                 $resp['msg'] = "An error occurred while saving the sales items.";
                 $resp['error'] = $this->conn->error;
             }
-    
+
         } else {
             $resp['status'] = 'failed';
             $resp['msg'] = "An error occurred while saving the sales data.";
             $resp['error'] = $this->conn->error;
         }
-    
+
         return json_encode($resp);
-    
+
     }
 
     function delete_sales() {
@@ -222,11 +222,10 @@ class Master extends DBConnection {
 
         return json_encode($resp);
     }
-    
 
 
-      // Save or Update Production
-	  function save_production() {
+    // Save or Update Production
+    function save_production() {
         extract($_POST);
         $date = $this->conn->real_escape_string($date);
         $quantity = (int) $quantity;
@@ -268,6 +267,30 @@ class Master extends DBConnection {
         return json_encode($resp);
     }
 
+    function get_total_stock() {
+        $total_production = 0;
+        $production_res = $this->conn->query("SELECT SUM(quantity) as total FROM production");
+        if ($production_res && $production_res->num_rows > 0) {
+            $row = $production_res->fetch_assoc();
+            $total_production = $row['total'] ?? 0;
+        }
+
+        $total_sales = 0;
+        $sales_res = $this->conn->query("SELECT SUM(quantity) as total FROM sales_items");
+        if ($sales_res && $sales_res->num_rows > 0) {
+            $row = $sales_res->fetch_assoc();
+            $total_sales = $row['total'] ?? 0;
+        }
+
+        $current_stock = $total_production - $total_sales;
+
+        // Ensure the stock level is never negative
+        if ($current_stock < 0) {
+            $current_stock = 0;
+        }
+
+        return json_encode(['current_stock' => $current_stock]);
+    }
 }
 
 // === ROUTING ===
@@ -305,6 +328,10 @@ switch ($action) {
         break;
     case 'reset_password':
         echo $Master->reset_password();
+        break;
+
+    case 'get_total_stock': // Add this case to your routing
+        echo $Master->get_total_stock();
         break;
 
     default:
