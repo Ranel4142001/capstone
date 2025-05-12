@@ -2,18 +2,26 @@
 require_once('../config.php');
 require_once('inc/header.php');
 
-// Get date filters from GET parameters
+// --- Pagination Setup ---
+$records_per_page = isset($_GET['entries']) ? intval($_GET['entries']) : 10;
+$current_page = isset($_GET['page_no']) ? intval($_GET['page_no']) : 1;
+$offset = ($current_page - 1) * $records_per_page;
+
+// --- Filters and Sorting ---
 $date_start = $_GET['date_start'] ?? '';
 $date_end = $_GET['date_end'] ?? '';
 $high_production = $_GET['high_production'] ?? '';
-$where = '';
+$where_clauses = [];
+$query_params = [];
 
-// Apply date filter conditions
 if (!empty($date_start) && !empty($date_end)) {
-    $where = "WHERE date BETWEEN '{$date_start}' AND '{$date_end}'";
+    $where_clauses[] = "date BETWEEN ?";
+    $query_params[] = $date_start;
+    $query_params[] = $date_end;
 }
 
-// Set sorting order for production
+$where = !empty($where_clauses) ? "WHERE " . implode(" AND ", $where_clauses) : "";
+
 if ($high_production == 'highest') {
     $order_by = "ORDER BY quantity DESC, date DESC";
 } elseif ($high_production == 'lowest') {
@@ -21,6 +29,49 @@ if ($high_production == 'highest') {
 } else {
     $order_by = "ORDER BY date DESC"; // Default sorting
 }
+
+// --- Fetch Production Data with Pagination ---
+$sql = "SELECT * FROM production $where $order_by LIMIT ?, ?";
+$stmt = $conn->prepare($sql);
+
+// Bind parameters dynamically
+$types = '';
+$bind_params = [];
+foreach ($query_params as $param) {
+    $types .= 's'; // Assuming all filter parameters are strings (adjust if needed)
+    $bind_params[] = &$param;
+}
+$types .= 'ii'; // For offset and limit (integers)
+$bind_params[] = &$offset;
+$bind_params[] = &$records_per_page;
+
+if ($stmt) {
+    array_unshift($bind_params, $types);
+    mysqli_stmt_bind_param($stmt, ...$bind_params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $productions = $result->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+} else {
+    die("Error preparing statement: " . $conn->error);
+}
+
+// --- Count Total Records for Pagination ---
+$total_sql = "SELECT COUNT(*) as total FROM production $where";
+$total_stmt = $conn->prepare($total_sql);
+if ($total_stmt) {
+    if (!empty($query_params)) {
+        $types_total = str_repeat('s', count($query_params));
+        mysqli_stmt_bind_param($total_stmt, $types_total, ...$query_params);
+    }
+    $total_stmt->execute();
+    $total_result = $total_stmt->get_result();
+    $total_records = $total_result->fetch_assoc()['total'];
+    $total_stmt->close();
+} else {
+    die("Error preparing total count statement: " . $conn->error);
+}
+$total_pages = ceil($total_records / $records_per_page);
 ?>
 
 <style>
@@ -35,6 +86,32 @@ if ($high_production == 'highest') {
         width: 100%;
         object-fit: contain;
     }
+    .pagination {
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+    }
+    .pagination .page-item {
+        margin: 0 5px;
+    }
+    .pagination .page-link {
+        padding: 8px 12px;
+        border: 1px solid #ccc;
+        text-decoration: none;
+        color: #333;
+        border-radius: 4px;
+    }
+    .pagination .page-item.active .page-link {
+        background-color: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+    .pagination .page-item.disabled .page-link {
+        color: #6c757d;
+        background-color: #e9ecef;
+        border-color: #dee2e6;
+        cursor: not-allowed;
+    }
 </style>
 
 <div class="col-lg-12">
@@ -47,6 +124,15 @@ if ($high_production == 'highest') {
         </div>
         <div class="card-body">
             <div class="row mb-3">
+                <div class="col-md-2">
+                    <label><strong>Show Entries</strong></label>
+                    <select id="entriesPerPage" class="form-control form-control-sm">
+                        <option value="10" <?= $records_per_page == 10 ? 'selected' : '' ?>>10</option>
+                        <option value="25" <?= $records_per_page == 25 ? 'selected' : '' ?>>25</option>
+                        <option value="50" <?= $records_per_page == 50 ? 'selected' : '' ?>>50</option>
+                        <option value="100" <?= $records_per_page == 100 ? 'selected' : '' ?>>100</option>
+                    </select>
+                </div>
                 <div class="col-md-3">
                     <label><strong>Date Start</strong></label>
                     <input type="date" id="date_start" class="form-control form-control-sm" value="<?= $date_start ?>">
@@ -63,8 +149,8 @@ if ($high_production == 'highest') {
                         <option value="lowest" <?= $high_production == 'lowest' ? 'selected' : '' ?>>Lowest Production</option>
                     </select>
                 </div>
-                <div class="col-md-2 align-self-end">
-                    <button class="btn btn-sm btn-primary btn-block" id="filter_btn"><i class="fas fa-filter"></i> Apply Filters</button>
+                <div class="col-md-1 align-self-end">
+                    <button class="btn btn-sm btn-primary btn-block" id="filter_btn"><i class="fas fa-filter"></i> Apply</button>
                 </div>
             </div>
 
@@ -80,44 +166,65 @@ if ($high_production == 'highest') {
                         <th class="text-center">#</th>
                         <th class="text-center"><i class="fas fa-calendar-alt"></i> Date</th>
                         <th class="text-center"><i class="fas fa-box"></i> Quantity (Jars)
-                            <i class="fas fa-arrow-down text-primary"></i>
+                            <?php if ($high_production == 'highest'): ?>
+                                <i class="fas fa-arrow-up text-success"></i>
+                            <?php elseif ($high_production == 'lowest'): ?>
+                                <i class="fas fa-arrow-down text-danger"></i>
+                            <?php else: ?>
+                                <i class="fas fa-arrow-down text-primary"></i>
+                            <?php endif; ?>
                         </th>
                         <th class="text-center"><i class="fas fa-cogs"></i> Action</th>
                     </tr>
                 </thead>
                 <tbody style="background-color: white; color: black;">
                     <?php
-                    $i = 1;
-                    $qry = $conn->query("SELECT * FROM production $where $order_by");
-                    if($qry && $qry->num_rows > 0):
-                        while($row = $qry->fetch_assoc()):
+                    if (!empty($productions)):
+                        $i = ($current_page - 1) * $records_per_page + 1;
+                        foreach ($productions as $row):
                     ?>
-                    <tr class="text-center">
-                        <td><?= $i++ ?></td>
-                        <td><?= date("F d, Y", strtotime($row['date'])) ?></td>
-                        <td><?= number_format($row['quantity']) ?></td>
-                        <td>
-                            <button class="btn btn-sm btn-primary edit-production"
-                                    data-id="<?= $row['id'] ?>"
-                                    data-date="<?= $row['date'] ?>"
-                                    data-quantity="<?= $row['quantity'] ?>">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            <button class="btn btn-sm btn-danger delete-production" data-id="<?= $row['id'] ?>">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </td>
-                    </tr>
+                        <tr class="text-center">
+                            <td><?= $i++ ?></td>
+                            <td><?= date("F d, Y", strtotime($row['date'])) ?></td>
+                            <td><?= number_format($row['quantity']) ?></td>
+                            <td>
+                                <button class="btn btn-sm btn-primary edit-production"
+                                        data-id="<?= $row['id'] ?>"
+                                        data-date="<?= $row['date'] ?>"
+                                        data-quantity="<?= $row['quantity'] ?>">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="btn btn-sm btn-danger delete-production" data-id="<?= $row['id'] ?>">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </td>
+                        </tr>
                     <?php
-                        endwhile;
+                        endforeach;
                     else:
                     ?>
-                    <tr>
-                        <td colspan="4" class="text-center text-muted">No production records found for the selected criteria.</td>
-                    </tr>
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">No production records found for the selected criteria.</td>
+                        </tr>
                     <?php endif; ?>
                 </tbody>
             </table>
+
+            <nav aria-label="Production Pagination">
+                <ul class="pagination">
+                    <li class="page-item <?= $current_page <= 1 ? 'disabled' : '' ?>">
+                        <a class="page-link" href="?page=production&page_no=<?= $current_page - 1 ?>&date_start=<?= $date_start ?>&date_end=<?= $date_end ?>&high_production=<?= $high_production ?>&entries=<?= $records_per_page ?>">Previous</a>
+                    </li>
+                    <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                        <li class="page-item <?= $i == $current_page ? 'active' : '' ?>">
+                            <a class="page-link" href="?page=production&page_no=<?= $i ?>&date_start=<?= $date_start ?>&date_end=<?= $date_end ?>&high_production=<?= $high_production ?>&entries=<?= $records_per_page ?>"><?= $i ?></a>
+                        </li>
+                    <?php endfor; ?>
+                    <li class="page-item <?= $current_page >= $total_pages ? 'disabled' : '' ?>">
+                        <a class="page-link" href="?page=production&page_no=<?= $current_page + 1 ?>&date_start=<?= $date_start ?>&date_end=<?= $date_end ?>&high_production=<?= $high_production ?>&entries=<?= $records_per_page ?>">Next</a>
+                    </li>
+                </ul>
+            </nav>
         </div>
     </div>
 </div>
@@ -223,6 +330,7 @@ $(document).ready(function(){
         const productionOrder = $(this).val();
         const urlParams = new URLSearchParams(window.location.search);
         urlParams.set('high_production', productionOrder);
+        urlParams.set('page_no', 1); // Reset to the first page when sorting changes
         window.history.replaceState({}, '', '?' + urlParams.toString());
         location.reload();
     });
@@ -234,11 +342,21 @@ $(document).ready(function(){
             const urlParams = new URLSearchParams(window.location.search);
             urlParams.set('date_start', start);
             urlParams.set('date_end', end);
+            urlParams.set('page_no', 1); // Reset to the first page when filtering dates
             window.history.replaceState({}, '', '?' + urlParams.toString());
             location.reload();
         } else {
-            alert('Please select both Date Start and Date End.');
+            alert('Please select both Date Start and Date End to apply date filters.');
         }
+    });
+
+    $('#entriesPerPage').change(function(){
+        const entries = $(this).val();
+        const urlParams = new URLSearchParams(window.location.search);
+        urlParams.set('entries', entries);
+        urlParams.set('page_no', 1); // Reset to the first page when entries per page changes
+        window.history.replaceState({}, '', '?' + urlParams.toString());
+        location.reload();
     });
 });
 
@@ -250,10 +368,10 @@ function alert_toast(msg, type='success'){
         toastrColor = '#dc3545';
     }
     Toast = Swal.mixin({
-      toast: true,
-      position: 'top-end',
-      showConfirmButton: false,
-      timer: 5000
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 5000
     });
     Toast.fire({
         icon: type === 'success' ? 'success' : 'error',

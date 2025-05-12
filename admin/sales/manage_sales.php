@@ -1,4 +1,4 @@
-<?php 
+<?php
 if(isset($_GET['id']) && $_GET['id'] > 0){
     $qry = $conn->query("SELECT * from `sales` where id = '{$_GET['id']}' ");
     if($qry->num_rows > 0){
@@ -10,7 +10,7 @@ if(isset($_GET['id']) && $_GET['id'] > 0){
 ?>
 <?php if($_settings->chk_flashdata('success')): ?>
 <script>
-	alert_toast("<?php echo $_settings->flashdata('success') ?>",'success')
+    alert_toast("<?php echo $_settings->flashdata('success') ?>",'success')
 </script>
 <?php endif;?>
 <div class="card card-outline card-primary">
@@ -42,7 +42,6 @@ if(isset($_GET['id']) && $_GET['id'] > 0){
                     </div>
                 </div>
 
-                <!-- ✅ Date Created Field -->
                 <div class="row">
                     <div class="form-group col-sm-6">
                         <label class="control-label">Date Created</label>
@@ -56,7 +55,7 @@ if(isset($_GET['id']) && $_GET['id'] > 0){
                         <label class="control-label">Jar Type</label>
                         <select id="jar_type_id" class="custom-select select2">
                             <option value=""></option>
-                            <?php 
+                            <?php
                             $j_qry = $conn->query("SELECT * FROM jar_types ORDER BY `name` ASC");
                             while($row = $j_qry->fetch_assoc()):
                             ?>
@@ -92,7 +91,7 @@ if(isset($_GET['id']) && $_GET['id'] > 0){
                         </tr>
                     </thead>
                     <tbody>
-                        <?php 
+                        <?php
                         if(isset($id)):
                         $qry2 = $conn->query("SELECT i.*,j.name FROM `sales_items` i INNER JOIN `jar_types` j ON j.id = i.jar_type_id WHERE i.sales_id = '{$id}' ORDER BY id ASC");
                         while($row = $qry2->fetch_assoc()):
@@ -133,9 +132,26 @@ if(isset($_GET['id']) && $_GET['id'] > 0){
     </div>
 </div>
 
+<style>
+  .err_msg {
+    position: fixed; /* To position it relative to the viewport */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* To center it */
+    z-index: 1050; /* To ensure it's above other elements (adjust if needed) */
+    width: 80%; /* Adjust width as needed */
+    max-width: 400px; /* Optional maximum width */
+  }
+
+  .err_msg .alert {
+    margin-bottom: 0; /* Remove default bottom margin of alert */
+    text-align: center; /* Center the text within the alert */
+  }
+</style>
+
 <script>
     function calculate_total(){
-        let total = 0; 
+        let total = 0;
         $('.s-item').each(function(){
             var amount = $(this).find('[name="total_amount[]"]').val();
             total += parseFloat(amount);
@@ -224,8 +240,15 @@ if(isset($_GET['id']) && $_GET['id'] > 0){
                         location.href = './?page=sales';
                     } else if(!!resp.msg){
                         var msg = $('<div class="err_msg"><div class="alert alert-danger">'+resp.msg+'</div></div>');
-                        $('#sales-form').prepend(msg); 
+                        $('#sales-form').prepend(msg);
                         msg.show('slow');
+
+                        // ✅ Make the error disappear after 3 seconds (adjust as needed)
+                        setTimeout(function(){
+                            msg.hide('slow', function(){
+                                msg.remove();
+                            });
+                        }, 3000); // 3000 milliseconds = 3 seconds
                     } else {
                         alert_toast('An error occurred', "error");
                         console.log(resp);

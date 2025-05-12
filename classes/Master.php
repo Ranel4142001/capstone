@@ -66,6 +66,34 @@ class Master extends DBConnection {
 
     function save_sales() {
         extract($_POST);
+
+        $total_requested_quantity = array_sum($quantity); // Calculate the total quantity being sold
+
+        // Get the current total stock
+        $total_production = 0;
+        $production_res = $this->conn->query("SELECT SUM(quantity) as total FROM production");
+        if ($production_res && $production_res->num_rows > 0) {
+            $row = $production_res->fetch_assoc();
+            $total_production = $row['total'] ?? 0;
+        }
+
+        $total_existing_sales = 0;
+        $sales_res = $this->conn->query("SELECT SUM(quantity) as total FROM sales_items");
+        if ($sales_res && $sales_res->num_rows > 0) {
+            $row = $sales_res->fetch_assoc();
+            $total_existing_sales = $row['total'] ?? 0;
+        }
+
+        $current_stock = $total_production - $total_existing_sales;
+
+        if ($total_requested_quantity > $current_stock) {
+            $resp['status'] = 'failed';
+            $resp['msg'] = "Insufficient stock. Available stock: " . $current_stock;
+            return json_encode($resp);
+        }
+
+        // *** Existing save_sales() functionality starts here ***
+        $this->conn->begin_transaction(); // Start transaction for atomicity
         $data = "";
 
         // Prepare the sales data (excluding arrays and non-column fields)
@@ -88,21 +116,21 @@ class Master extends DBConnection {
         $this->capture_err();
 
         if ($save) {
-            $id = empty($id) ? $this->conn->insert_id : $id;
+            $sales_id = empty($id) ? $this->conn->insert_id : $id;
 
             // Clear old sales items
-            $this->conn->query("DELETE FROM sales_items WHERE sales_id = '{$id}'");
+            $this->conn->query("DELETE FROM sales_items WHERE sales_id = '{$sales_id}'");
 
             // Re-insert sales items
             $data = "";
             for ($i = 0; $i < count($quantity); $i++) {
                 if (!empty($data)) $data .= ", ";
-                $sales_id = $this->conn->real_escape_string($id);
-                $jar_id = $this->conn->real_escape_string($jar_type_id[$i]);
-                $qty = $this->conn->real_escape_string($quantity[$i]);
-                $price_val = $this->conn->real_escape_string($price[$i]);
-                $total_val = $this->conn->real_escape_string($total_amount[$i]);
-                $data .= "('{$sales_id}','{$jar_id}','{$qty}','{$price_val}','{$total_val}')";
+                $sales_id_esc = $this->conn->real_escape_string($sales_id);
+                $jar_id_esc = $this->conn->real_escape_string($jar_type_id[$i]);
+                $qty_esc = $this->conn->real_escape_string($quantity[$i]);
+                $price_val_esc = $this->conn->real_escape_string($price[$i]);
+                $total_val_esc = $this->conn->real_escape_string($total_amount[$i]);
+                $data .= "('{$sales_id_esc}','{$jar_id_esc}','{$qty_esc}','{$price_val_esc}','{$total_val_esc}')";
             }
 
             $sql2 = $this->conn->query("INSERT INTO `sales_items` (`sales_id`,`jar_type_id`,`quantity`,`price`,`total_amount`) VALUES {$data}");
@@ -110,13 +138,16 @@ class Master extends DBConnection {
             if ($sql2) {
                 $this->settings->set_flashdata("success", "Sales Transaction successfully saved");
                 $resp['status'] = 'success';
+                $this->conn->commit(); // Commit transaction on successful save
             } else {
+                $this->conn->rollback(); // Rollback transaction if saving sales items fails
                 $resp['status'] = 'failed';
                 $resp['msg'] = "An error occurred while saving the sales items.";
                 $resp['error'] = $this->conn->error;
             }
 
         } else {
+            $this->conn->rollback(); // Rollback transaction if saving main sales data fails
             $resp['status'] = 'failed';
             $resp['msg'] = "An error occurred while saving the sales data.";
             $resp['error'] = $this->conn->error;
