@@ -32,6 +32,15 @@
                       </a>
                     </li> 
                     <li class="nav-item dropdown">
+                      <a href="<?php echo base_url ?>admin/?page=stocks" class="nav-link nav-stocks">
+                      <i class="nav-icon fas fa-industry"></i>
+
+                        <p>
+                          Stocks
+                        </p>
+                      </a>
+                    </li>
+                    <li class="nav-item dropdown">
                       <a href="<?php echo base_url ?>admin/?page=production" class="nav-link nav-production">
                       <i class="nav-icon fas fa-industry"></i>
 
