@@ -31,7 +31,7 @@ $totalProduction = fetch_single_value(
 
 // Months array
 $months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 // Initialize monthly arrays
 $monthlySales = array_fill(0, 12, 0);
@@ -69,14 +69,19 @@ if ($productionPerMonth) { // Check if the query was successful
 }
 
 // Available years (dynamically generate from database)
-$yearsQuery = $conn->query("SELECT DISTINCT YEAR(date_created) AS year FROM sales ORDER BY year ASC");
+$yearsQuery = $conn->query("
+  SELECT DISTINCT YEAR(date_created) AS year FROM sales
+  UNION
+  SELECT DISTINCT YEAR(date) AS year FROM production
+  ORDER BY year ASC
+");
 $available_years = [];
 if ($yearsQuery) {
     while ($row = $yearsQuery->fetch_assoc()) {
         $available_years[] = $row['year'];
     }
 } else {
-     $available_years = ["2025", "2024", "2023"];
+    $available_years = ["2025", "2024", "2023"];
 }
 if(empty($available_years)){
     $available_years = ["2025", "2024", "2023"];

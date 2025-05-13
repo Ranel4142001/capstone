@@ -13,7 +13,7 @@ require_once('inc/header.php');
   .summary-container {
     display: flex;
     gap: 15px;
-    margin-bottom: 15px;
+    margin-bottom: 5px;
     flex-wrap: wrap;
   }
 
@@ -80,10 +80,8 @@ require_once('inc/header.php');
     cursor: pointer;
   }
 
-  .chart-header button:hover,
-  .chart-header select:hover {
+  .chart-header button.active {
     background-color: #0056b3;
-    color: white;
   }
 
   #analyticsChart {
@@ -115,11 +113,11 @@ require_once('inc/header.php');
 
   <div class="chart-card">
     <div class="chart-header">
-      <h6>Monthly Analytics</h6>
+      <h6>Sales and Productions</h6>
       <div>
         <select id="yearSelector"></select>
-        <button onclick="showDataset('sales')">Sales</button>
-        <button onclick="showDataset('production')">Production</button>
+        <button id="salesButton" class="active">Sales</button>
+        <button id="productionButton" class="">Production</button>
       </div>
     </div>
     <canvas id="analyticsChart"></canvas>
@@ -129,30 +127,42 @@ require_once('inc/header.php');
   <script>
     let chart;
     let selectedYear;
+    const salesButton = document.getElementById('salesButton');
+    const productionButton = document.getElementById('productionButton');
 
-    // Populate year selector
     function populateYearSelector() {
       const sel = document.getElementById('yearSelector');
-      sel.innerHTML = ''; // clear
-      // Fetch years dynamically from the database using AJAX
-      fetch('../classes/get_available_years.php')
+      sel.innerHTML = ''; // Clear existing options
+
+      // Use get_dashboard_data.php to also get available years
+      fetch('../classes/get_dashboard_data.php')
         .then(response => response.json())
-        .then(years => {
+        .then(data => {
+          const years = data.available_years || [];
+
+          if (!years.length) {
+            const currentYear = new Date().getFullYear();
+            for (let i = 2020; i <= currentYear; i++) {
+              years.push(i);
+            }
+          }
+
           years.forEach(year => {
             const opt = document.createElement('option');
             opt.value = year;
             opt.textContent = year;
             sel.appendChild(opt);
           });
-          // Default to the last year in the array
-          selectedYear = years[years.length - 1];
+
+          selectedYear = data.selectedYear || years[years.length - 1];
           sel.value = selectedYear;
-          // Trigger initial fetchStats
+
+          // Fetch stats for selected year
           fetchStats();
         })
         .catch(error => {
-          console.error('Error fetching years:', error);
-          // If there's an error, you might want to display a default set of years
+          console.error('Error fetching available years:', error);
+
           const currentYear = new Date().getFullYear();
           for (let i = 2020; i <= currentYear; i++) {
             const opt = document.createElement('option');
@@ -160,9 +170,10 @@ require_once('inc/header.php');
             opt.textContent = i;
             sel.appendChild(opt);
           }
+
           selectedYear = currentYear;
           sel.value = selectedYear;
-          fetchStats(); //fetch stats after the year dropdown is populated
+          fetchStats();
         });
 
       sel.addEventListener('change', () => {
@@ -170,8 +181,6 @@ require_once('inc/header.php');
         fetchStats();
       });
     }
-
-
 
     function fetchStats() {
       const url = `../classes/get_dashboard_data.php?year=${selectedYear || ''}`;
@@ -194,7 +203,9 @@ require_once('inc/header.php');
 
     function createChart(labels, salesData, productionData) {
       const ctx = document.getElementById('analyticsChart').getContext('2d');
-      const hasData = salesData.some(val => val > 0) || productionData.some(val => val > 0);
+
+      // Determine if data is empty (all 0s)
+      const allZero = salesData.every(val => val === 0) && productionData.every(val => val === 0);
 
       chart = new Chart(ctx, {
         type: 'line',
@@ -226,27 +237,20 @@ require_once('inc/header.php');
           layout: { padding: 10 },
           scales: {
             x: {
-              ticks: {
-                font: { size: 12 }
-              }
+              ticks: { font: { size: 12 } }
             },
             y: {
               beginAtZero: true,
+              min: 0,
               suggestedMin: 0,
+              suggestedMax: allZero ? 1 : undefined, // ✅ Force [0,1] if no data
               ticks: {
                 font: { size: 12 },
+                stepSize: 1,
                 callback: function(value) {
-                  if (hasData) {
-                    if (value % 1 === 0) {
-                      return value;
-                    } else {
-                      return '';
-                    }
-                  }
-                  return value;
+                  return Number.isInteger(value) ? value : '';
                 }
-              },
-              min: 0,
+              }
             }
           },
           plugins: {
@@ -257,18 +261,12 @@ require_once('inc/header.php');
                 label: function(context) {
                   const label = context.dataset.label;
                   const value = context.parsed.y;
-                  return label.includes("Sales") ?
-                    `₱${value.toLocaleString()}` :
-                    `${value} jars`;
+                  return label.includes("Sales") ? `₱${value.toLocaleString()}` : `${value} jars`;
                 }
               }
             },
             legend: {
-              labels: {
-                font: {
-                  size: 13
-                }
-              }
+              labels: { font: { size: 13 } }
             }
           },
           interaction: {
@@ -280,39 +278,49 @@ require_once('inc/header.php');
     }
 
     function updateChart(salesData, productionData) {
-      const hasData = salesData.some(val => val > 0) || productionData.some(val => val > 0);
-      const yAxisOptions = {
-        beginAtZero: true,
-        suggestedMin: 0,
-        ticks: {
-          font: {
-            size: 12
-          },
-          callback: function(value) {
-            if (hasData) {
-              if (value % 1 === 0) {
-                return value;
-              } else {
-                return '';
-              }
-            }
-            return value;
-          }
-        },
-        min: 0,
+      const allZero = salesData.every(val => val === 0) && productionData.every(val => val === 0);
+
+      // Reset Y-axis settings
+      chart.options.scales.y.min = 0;
+      chart.options.scales.y.suggestedMin = 0;
+      chart.options.scales.y.suggestedMax = allZero ? 1 : undefined;
+      chart.options.scales.y.ticks = {
+        stepSize: 1,
+        callback: function(value) {
+          return Number.isInteger(value) ? value : '';
+        }
       };
 
-
-      chart.options.scales.y = yAxisOptions;
-      chart.config.options.scales.y = yAxisOptions;
+      // Update data
       chart.data.datasets[0].data = salesData;
       chart.data.datasets[1].data = productionData;
+
+      // Trigger chart update
       chart.update();
     }
+
+    function toggleDataset(datasetType) {
+      chart.data.datasets.forEach((dataset) => {
+        if (dataset.label.toLowerCase().includes(datasetType)) {
+          dataset.hidden = !dataset.hidden;
+        }
+      });
+      chart.update();
+
+      // Update button styles
+      if (datasetType === 'sales') {
+        salesButton.classList.toggle('active');
+      } else if (datasetType === 'production') {
+        productionButton.classList.toggle('active');
+      }
+    }
+
+    // Event listeners for the buttons
+    salesButton.addEventListener('click', () => toggleDataset('sales'));
+    productionButton.addEventListener('click', () => toggleDataset('production'));
 
     // Fetch years dynamically and populate the dropdown on page load
     populateYearSelector();
     setInterval(fetchStats, 10000);
   </script>
 </body>
-
