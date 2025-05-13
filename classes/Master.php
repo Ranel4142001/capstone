@@ -322,6 +322,49 @@ class Master extends DBConnection {
 
         return json_encode(['current_stock' => $current_stock]);
     }
+
+
+   public function get_realtime_analytics() {
+    $resp = [
+        'total_production' => 0,
+        'total_sales' => 0.00
+    ];
+
+    $year = isset($_GET['year']) && is_numeric($_GET['year']) ? $_GET['year'] : null;
+
+    // Add WHERE clause if year is provided
+    $prod_where = $sales_where = '';
+    if ($year) {
+        $prod_where = "WHERE YEAR(date) = '{$year}'";
+        $sales_where = "WHERE YEAR(created_at) = '{$year}'";
+    }
+
+    // Total production
+    $prod_sql = "SELECT IFNULL(SUM(quantity), 0) as total FROM production {$prod_where}";
+    $prod_res = $this->conn->query($prod_sql);
+    if ($prod_res && $prod_res->num_rows > 0) {
+        $row = $prod_res->fetch_assoc();
+        $resp['total_production'] = (int) $row['total']; // Ensure integer
+    }
+
+    // Total sales amount
+    $sales_sql = "
+        SELECT IFNULL(SUM(si.total_amount), 0) as total
+        FROM sales_items si
+        JOIN sales s ON si.sales_id = s.id
+        {$sales_where}
+    ";
+    $sales_res = $this->conn->query($sales_sql);
+    if ($sales_res && $sales_res->num_rows > 0) {
+        $row = $sales_res->fetch_assoc();
+        $resp['total_sales'] = number_format((float)$row['total'], 2, '.', '');
+    }
+
+    return json_encode($resp);
+}
+
+
+
 }
 
 // === ROUTING ===
@@ -364,6 +407,10 @@ switch ($action) {
     case 'get_total_stock': // Add this case to your routing
         echo $Master->get_total_stock();
         break;
+    case 'get_realtime_analytics':
+        echo $Master->get_realtime_analytics();
+        break;
+
 
     default:
         // echo $sysset->index();

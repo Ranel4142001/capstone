@@ -1,160 +1,318 @@
 <?php
-require_once('../config.php'); // Database Connection
+require_once('../config.php');
 require_once('inc/header.php');
-
-// Define a fixed start year (e.g., business started in 2020)
-$default_start_year = 2020;
-$current_year = (int)date('Y');
-
-// Get the earliest year from actual sales data
-$year_query = $conn->query("SELECT MIN(YEAR(date_created)) as min_year FROM sales");
-$min_sales_year = ($year_query && $year_query->num_rows > 0) ? $year_query->fetch_assoc()['min_year'] ?? $default_start_year : $default_start_year;
-
-// Determine range of years for filtering
-$start_year = min($default_start_year, $min_sales_year);
-$available_years = range($start_year, $current_year);
-
-// Capture selected year from URL parameters
-$selected_year = isset($_GET['year']) && is_numeric($_GET['year']) ? (int)$_GET['year'] : $current_year;
-
-// Initialize monthly sales data with all zero values
-$sales_data = array_fill(1, 12, 0);
-$labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-// Fetch monthly sales for the selected year
-$query = $conn->query("SELECT MONTH(date_created) as month, COALESCE(SUM(amount), 0) as total_sales FROM sales WHERE YEAR(date_created) = {$selected_year} GROUP BY MONTH(date_created)");
-
-$total_year_sales = 0;
-if ($query && $query->num_rows > 0) {
-    while ($row = $query->fetch_assoc()) {
-        $month = (int)$row['month'];
-        $amount = (float)$row['total_sales'];
-        $sales_data[$month] = $amount;
-        $total_year_sales += $amount;
-    }
-}
-
-// Ensure graph displays correctly even if no sales data exists
-if ($total_year_sales == 0) {
-    $sales_data = array_fill(1, 12, 0); // Force a flat line at zero sales
-}
 ?>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #f4f4f4;
+    overflow-x: hidden;
+  }
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Sales Analytics</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        .chart-container { width: 90%; margin: auto; padding-top: 20px; }
-        .page-header { margin-top: 20px; text-align: center; }
-        .filter-options { margin-top: 20px; text-align: center; }
-    </style>
+  .summary-container {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+  }
+
+  .card {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 8px 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    width: 140px;
+  }
+
+  .card h6 {
+    font-size: 12px;
+    color: #666;
+    margin: 0;
+  }
+
+  .card h3 {
+    font-size: 16px;
+    font-weight: bold;
+    margin-top: 4px;
+    color: #333;
+  }
+
+  .chart-card {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 12px 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .chart-header h6 {
+    font-size: 14px;
+    margin: 0;
+  }
+
+  .chart-header select,
+  .chart-header button {
+    margin-left: 8px;
+    padding: 5px 8px;
+    border: none;
+    border-radius: 4px;
+    background-color: #007BFF;
+    color: white;
+    cursor: pointer;
+    font-size: 12px;
+  }
+
+  .chart-header select {
+    appearance: none;
+    background-color: #fff;
+    color: #333;
+    border: 1px solid #ccc;
+    cursor: pointer;
+  }
+
+  .chart-header button:hover,
+  .chart-header select:hover {
+    background-color: #0056b3;
+    color: white;
+  }
+
+  #analyticsChart {
+    width: 100% !important;
+    height: 50vh !important;
+  }
+
+  @media (max-width: 768px) {
+    #analyticsChart {
+      height: 60vh !important;
+    }
+  }
+</style>
 </head>
+
 <body>
-<div class="container-fluid">
-    <div class="page-header">
-        <h2 class="text-center"><i class="fas fa-chart-line"></i> Sales Analytics</h2>
+  <h3>Total Production and Sales</h3>
+
+  <div class="summary-container">
+    <div class="card">
+      <h6>Total Production (Jars)</h6>
+      <h3 id="total_production">0</h3>
     </div>
-
-    <div class="filter-options">
-        <form id="yearFilterForm">
-            <label for="year">Select Year:</label>
-            <select name="year" id="year" class="form-control-sm d-inline-block w-auto">
-                <?php foreach ($available_years as $year): ?>
-                    <option value="<?= $year ?>" <?= $selected_year == $year ? 'selected' : '' ?>><?= $year ?></option>
-                <?php endforeach; ?>
-            </select>
-            <button type="button" class="btn btn-primary btn-sm ml-2" id="applyFilter">Apply</button>
-        </form>
+    <div class="card">
+      <h6>Total Sales (₱)</h6>
+      <h3 id="total_sales">0.00</h3>
     </div>
+  </div>
 
-    <div class="chart-container">
-        <canvas id="salesChart"></canvas>
+  <div class="chart-card">
+    <div class="chart-header">
+      <h6>Monthly Analytics</h6>
+      <div>
+        <select id="yearSelector"></select>
+        <button onclick="showDataset('sales')">Sales</button>
+        <button onclick="showDataset('production')">Production</button>
+      </div>
     </div>
+    <canvas id="analyticsChart"></canvas>
+  </div>
 
-    <div class="text-center mt-3">
-    <h5>Total Sales for <?= $selected_year ?>: <strong id="totalSalesDisplay">₱<?= number_format($total_year_sales, 2) ?></strong></h5>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    let chart;
+    let selectedYear;
 
-    </div>
-</div>
+    // Populate year selector
+    function populateYearSelector() {
+      const sel = document.getElementById('yearSelector');
+      sel.innerHTML = ''; // clear
+      // Fetch years dynamically from the database using AJAX
+      fetch('../classes/get_available_years.php')
+        .then(response => response.json())
+        .then(years => {
+          years.forEach(year => {
+            const opt = document.createElement('option');
+            opt.value = year;
+            opt.textContent = year;
+            sel.appendChild(opt);
+          });
+          // Default to the last year in the array
+          selectedYear = years[years.length - 1];
+          sel.value = selectedYear;
+          // Trigger initial fetchStats
+          fetchStats();
+        })
+        .catch(error => {
+          console.error('Error fetching years:', error);
+          // If there's an error, you might want to display a default set of years
+          const currentYear = new Date().getFullYear();
+          for (let i = 2020; i <= currentYear; i++) {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = i;
+            sel.appendChild(opt);
+          }
+          selectedYear = currentYear;
+          sel.value = selectedYear;
+          fetchStats(); //fetch stats after the year dropdown is populated
+        });
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const ctx = document.getElementById('salesChart').getContext('2d');
-
-    // Force zero values if no sales exist
-    const salesData = <?= json_encode(array_values($sales_data)) ?>;
-    const hasSales = salesData.some(value => value > 0); // Check if any non-zero values exist
-
-    if (!hasSales) {
-        salesData.fill(0); // Ensures a flat zero line when no sales exist
+      sel.addEventListener('change', () => {
+        selectedYear = sel.value;
+        fetchStats();
+      });
     }
 
-    // Initialize Chart.js with consistent y-axis scaling
-    const salesChart = new Chart(ctx, {
+
+
+    function fetchStats() {
+      const url = `../classes/get_dashboard_data.php?year=${selectedYear || ''}`;
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('total_production').textContent = data.total_production;
+          document.getElementById('total_sales').textContent = parseFloat(data.total_sales).toFixed(2);
+
+          if (!chart) {
+            createChart(data.months, data.monthly_sales, data.monthly_production);
+          } else {
+            updateChart(data.monthly_sales, data.monthly_production);
+          }
+        })
+        .catch(error => {
+          console.error('Failed to fetch stats:', error);
+        });
+    }
+
+    function createChart(labels, salesData, productionData) {
+      const ctx = document.getElementById('analyticsChart').getContext('2d');
+      const hasData = salesData.some(val => val > 0) || productionData.some(val => val > 0);
+
+      chart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: <?= json_encode($labels) ?>,
-            datasets: [{
-                label: 'Total Sales in <?= $selected_year ?> (₱)',
-                data: salesData,
-                borderColor: 'blue',
-                backgroundColor: 'rgba(0, 123, 255, 0.2)',
-                borderWidth: 2,
-                tension: 0.3,
-                fill: true
-            }]
+          labels: labels,
+          datasets: [{
+            label: 'Sales (₱)',
+            data: salesData,
+            borderColor: 'blue',
+            backgroundColor: 'rgba(0,0,255,0.1)',
+            hidden: false,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            borderWidth: 2
+          }, {
+            label: 'Production (Jars)',
+            data: productionData,
+            borderColor: 'green',
+            backgroundColor: 'rgba(0,255,0,0.1)',
+            hidden: true,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            borderWidth: 2
+          }]
         },
         options: {
-            responsive: true,
-            plugins: {
-                legend: { position: 'bottom' },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const value = context.parsed.y || 0;
-                            return '₱' + value.toLocaleString();
-                        }
-                    }
-                }
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: { padding: 10 },
+          scales: {
+            x: {
+              ticks: {
+                font: { size: 12 }
+              }
             },
-            scales: {
-                x: { title: { display: true, text: 'Month' } },
-                y: {
-                    beginAtZero: true, 
-                    min: 0, 
-                    max: 5000, // Ensures fixed max range
-                    ticks: {
-                        stepSize: 1000, // Ensures increments match reference
-                        callback: function(value) {
-                            return '₱' + value.toLocaleString(); // Format correctly
-                        }
-                    },
-                    title: { display: true, text: 'Sales Amount (₱)' }
+            y: {
+              beginAtZero: true,
+              suggestedMin: 0,
+              ticks: {
+                font: { size: 12 },
+                callback: function(value) {
+                  if (hasData) {
+                    if (value % 1 === 0) {
+                      return value;
+                    } else {
+                      return '';
+                    }
+                  }
+                  return value;
                 }
+              },
+              min: 0,
             }
+          },
+          plugins: {
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              callbacks: {
+                label: function(context) {
+                  const label = context.dataset.label;
+                  const value = context.parsed.y;
+                  return label.includes("Sales") ?
+                    `₱${value.toLocaleString()}` :
+                    `${value} jars`;
+                }
+              }
+            },
+            legend: {
+              labels: {
+                font: {
+                  size: 13
+                }
+              }
+            }
+          },
+          interaction: {
+            mode: 'index',
+            intersect: false
+          }
         }
-    });
+      });
+    }
 
-    // Apply filtering with URLSearchParams
-    document.getElementById('applyFilter').addEventListener('click', function() {
-        const selectedYear = document.getElementById('year').value;
-        const urlParams = new URLSearchParams(window.location.search);
-        urlParams.set('year', selectedYear);
-        window.history.replaceState({}, '', '?' + urlParams.toString());
-        location.reload();
-    });
-});
-</script>
+    function updateChart(salesData, productionData) {
+      const hasData = salesData.some(val => val > 0) || productionData.some(val => val > 0);
+      const yAxisOptions = {
+        beginAtZero: true,
+        suggestedMin: 0,
+        ticks: {
+          font: {
+            size: 12
+          },
+          callback: function(value) {
+            if (hasData) {
+              if (value % 1 === 0) {
+                return value;
+              } else {
+                return '';
+              }
+            }
+            return value;
+          }
+        },
+        min: 0,
+      };
 
 
-<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+      chart.options.scales.y = yAxisOptions;
+      chart.config.options.scales.y = yAxisOptions;
+      chart.data.datasets[0].data = salesData;
+      chart.data.datasets[1].data = productionData;
+      chart.update();
+    }
+
+    // Fetch years dynamically and populate the dropdown on page load
+    populateYearSelector();
+    setInterval(fetchStats, 10000);
+  </script>
 </body>
-</html>
+
