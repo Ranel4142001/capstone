@@ -12,7 +12,7 @@ require_once('inc/header.php');
 
   .summary-container {
     display: flex;
-    gap: 15px;
+    gap: 660px;
     margin-bottom: 5px;
     flex-wrap: wrap;
   }
@@ -29,11 +29,12 @@ require_once('inc/header.php');
     font-size: 12px;
     color: #666;
     margin: 0;
+    font-weight: bold; /* Make the card heading bold */
   }
 
   .card h3 {
     font-size: 16px;
-    font-weight: bold;
+    font-weight: bold; /* Make the card value bold */
     margin-top: 4px;
     color: #333;
   }
@@ -98,18 +99,19 @@ require_once('inc/header.php');
 </head>
 
 <body>
-  <h3>Total Production and Sales</h3>
+  <h3>Total Sales and Productions</h3>
 
   <div class="summary-container">
-    <div class="card">
-      <h6>Total Production (Jars)</h6>
-      <h3 id="total_production">0</h3>
-    </div>
     <div class="card">
       <h6>Total Sales (₱)</h6>
       <h3 id="total_sales">0.00</h3>
     </div>
+    <div class="card">
+      <h6>Total Production (Jars)</h6>
+      <h3 id="total_production">0</h3>
+    </div>
   </div>
+
 
   <div class="chart-card">
     <div class="chart-header">
