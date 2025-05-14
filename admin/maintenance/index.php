@@ -3,7 +3,7 @@
 	alert_toast("<?php echo $_settings->flashdata('success') ?>",'success')
 </script>
 <?php endif;?>
-<div class="card card-outline card-primary">
+<div class="card card-outline card-info">
 	<div class="card-header">
 		<h3 class="card-title">List of Jar Types & Pricing</h3>
 		<div class="card-tools">

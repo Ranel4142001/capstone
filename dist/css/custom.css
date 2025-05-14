@@ -150,3 +150,62 @@ label.star:before {
     content: '\2605';
     font-family: FontAwesome
 }
+
+/* Sidebar background */
+.main-sidebar {
+    background-color: #12343b !important;
+}
+
+/* Sidebar menu item hover */
+.nav-sidebar .nav-item > .nav-link:hover {
+    background-color: #17A2B8 !important; /* darker teal for hover */
+    color: #fff !important;
+}
+
+/* Sidebar menu item active state */
+.nav-sidebar .nav-item > .nav-link.active {
+    background-color: #17A2B8 !important; /* slightly darker for active */
+    color: #fff !important;
+}
+
+/* Optional: make icons and text white in sidebar */
+.main-sidebar .nav-link,
+.main-sidebar .brand-link,
+.main-sidebar .nav-icon {
+    color: #ffffff !important;
+}
+
+.main-sidebar .brand-link:hover {
+    background-color: #17A2B8  !important;
+    color: #ffffff !important;
+}
+
+/* Top Navbar Background */
+.main-header {
+    background-color: #12343b!important;
+    border-color: #12343b !important;
+}
+
+/* Optional: make top navbar text/icons white */
+.main-header .nav-link,
+.main-header .navbar-nav > .nav-item > .nav-link,
+.main-header .navbar-brand {
+    color: #ffffff !important;
+}
+
+/* Optional: dropdown hover background (if you have dropdowns in header) */
+.main-header .nav-item.dropdown:hover {
+    background-color: #17A2B8 !important;
+}
+
+/* Brand header (AquaTrack) background color */
+.main-sidebar .brand-link {
+    background-color: #12343b !important;
+    color: #ffffff !important;
+}
+
+/* Optional: fix icon or text color if needed */
+.main-sidebar .brand-link .brand-image,
+.main-sidebar .brand-link .brand-text {
+    color: #ffffff !important;
+}

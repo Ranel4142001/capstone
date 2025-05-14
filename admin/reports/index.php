@@ -9,7 +9,7 @@ $type = isset($_GET['type'])? $_GET['type'] : 'all';
 $date_start = isset($_GET['date_start'])? $_GET['date_start'] : date("Y-m-d",strtotime(date("Y-m-d")." -5 days"));
 $date_end = isset($_GET['date_end'])? $_GET['date_end'] : date("Y-m-d");
 ?>
-<div class="card card-outline card-primary">
+<div class="card card-outline card-info">
 	<div class="card-header">
 		<h3 class="card-title">Sales Report</h3>
 	</div>

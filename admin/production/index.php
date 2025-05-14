@@ -115,7 +115,7 @@ $total_pages = ceil($total_records / $records_per_page);
 </style>
 
 <div class="col-lg-12">
-    <div class="card card-outline card-primary">
+    <div class="card card-outline card-info">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="card-title"><i class="fas fa-industry"></i> Production Tracker</h5>
             <button class="btn btn-sm btn-default btn-flat border-primary ml-auto" id="create_production">
