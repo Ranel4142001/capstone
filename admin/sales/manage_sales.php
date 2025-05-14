@@ -13,7 +13,7 @@ if(isset($_GET['id']) && $_GET['id'] > 0){
     alert_toast("<?php echo $_settings->flashdata('success') ?>",'success')
 </script>
 <?php endif;?>
-<div class="card card-outline card-primary">
+<div class="card card-outline card-info">
     <div class="card-header">
         <h3 class="card-title"><?php echo !isset($id) ? "Create New" : "Manage" ?> Sale</h3>
     </div>
@@ -68,7 +68,7 @@ if(isset($_GET['id']) && $_GET['id'] > 0){
                         <input type="number" min="1" class="form-control" id="quantity">
                     </div>
                     <div class="col-sm-2 mb-3">
-                        <button class="btn btn-primary btn-flat" type="button" id="add_to_list"><i class="fa fa-plus"></i> Add</button>
+                        <button class="btn btn-info btn-flat" type="button" id="add_to_list"><i class="fa fa-plus"></i> Add</button>
                     </div>
                 </div>
 
@@ -126,7 +126,7 @@ if(isset($_GET['id']) && $_GET['id'] > 0){
     </div>
     <div class="card-footer">
         <div class="d-flex w-100">
-            <button form="sales-form" class="btn btn-primary mr-2">Submit</button>
+            <button form="sales-form" class="btn btn-info mr-2">Submit</button>
             <a href="./?page=sales" class="btn btn-default">Cancel</a>
         </div>
     </div>

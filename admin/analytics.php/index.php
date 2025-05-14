@@ -67,7 +67,7 @@ require_once('inc/header.php');
     padding: 5px 8px;
     border: none;
     border-radius: 4px;
-    background-color: #007BFF;
+    background-color: #17A2B8;
     color: white;
     cursor: pointer;
     font-size: 12px;
@@ -82,7 +82,7 @@ require_once('inc/header.php');
   }
 
   .chart-header button.active {
-    background-color: #0056b3;
+    background-color: #17A2b8;
   }
 
   #analyticsChart {
@@ -216,7 +216,7 @@ require_once('inc/header.php');
           datasets: [{
             label: 'Sales (₱)',
             data: salesData,
-            borderColor: 'blue',
+            borderColor: '#17A2B8',
             backgroundColor: 'rgba(0,0,255,0.1)',
             hidden: false,
             pointRadius: 4,

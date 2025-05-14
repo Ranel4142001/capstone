@@ -53,7 +53,7 @@
 		<div class="card-footer">
 			<div class="col-md-12">
 				<div class="row">
-					<button class="btn btn-sm btn-primary" form="system-frm">Update</button>
+					<button class="btn btn-sm btn-info" form="system-frm">Update</button>
 				</div>
 			</div>
 		</div>

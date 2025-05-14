@@ -41,7 +41,7 @@ $date_end = isset($_GET['date_end'])? $_GET['date_end'] : date("Y-m-d");
 					</div>
 					<div class="col-md-3 ">
 						<div class="form-group row w-100">
-							<button class="btn btn-flat btn-primary mr-3"> Filter</button>
+							<button class="btn btn-flat btn-info mr-3"> Filter</button>
 							<button class="btn btn-flat btn-success" id="print" type="button"> <i class="fa fa-print"></i> Print</button>
 						</div>
 					</div>

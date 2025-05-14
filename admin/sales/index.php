@@ -7,12 +7,13 @@
     <div class="card-header">
         <h3 class="card-title">Sales</h3>
         <div class="card-tools">
-            <a href="?page=sales/manage_sales" class="btn btn-flat btn-primary"><span class="fas fa-plus"></span>  Create New</a>
+            <a href="?page=sales/manage_sales" class="btn btn-flat btn-info"><span class="fas fa-plus"></span>  Create New</a>
         </div>
     </div>
     <div class="card-body">
         <div class="container-fluid">
             <style>
+                
                 #indi-list_length label {
                     font-weight: bold; /* Make the "Show Entries" text bold */
                     color: #343a40; /* Slightly darker text color (Bootstrap's dark gray) */
@@ -54,7 +55,7 @@
                             <td><?php echo $row['date_created'] ?></td>
                             <td><?php echo $row['customer_name'] ?></td>
                             <td><?php echo ($row['type'] == 1)? "walk-in" : "for delivery" ?>
-                            <td class="text-center"><?php echo ($row['status'] == 1)? "<span class='badge badge-success'>Paid</span>" : "<span class='badge badge-primary'>Unpaid</span>" ?>
+                            <td class="text-center"><?php echo ($row['status'] == 1)? "<span class='badge badge-success'>Paid</span>" : "<span class='badge badge-info'>Unpaid</span>" ?>
                             <td class='text-right'><?php echo number_format($item_count) ?></td>
                             <td class='text-right'><?php echo number_format($row['amount'],2) ?></td>
                             <td align="center">

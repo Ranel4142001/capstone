@@ -118,7 +118,7 @@ $total_pages = ceil($total_records / $records_per_page);
     <div class="card card-outline card-info">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="card-title"><i class="fas fa-industry"></i> Production Tracker</h5>
-            <button class="btn btn-sm btn-default btn-flat border-primary ml-auto" id="create_production">
+            <button class="btn btn-sm btn-default btn-flat border-info ml-auto" id="create_production">
                 <i class="fas fa-plus-circle"></i> Add Production
             </button>
         </div>
@@ -150,7 +150,7 @@ $total_pages = ceil($total_records / $records_per_page);
                     </select>
                 </div>
                 <div class="col-md-1 align-self-end">
-                    <button class="btn btn-sm btn-primary btn-block" id="filter_btn"><i class="fas fa-filter"></i> Apply</button>
+                    <button class="btn btn-sm btn-info btn-block" id="filter_btn"><i class="fas fa-filter"></i> Apply</button>
                 </div>
             </div>
 
@@ -171,7 +171,7 @@ $total_pages = ceil($total_records / $records_per_page);
                             <?php elseif ($high_production == 'lowest'): ?>
                                 <i class="fas fa-arrow-down text-danger"></i>
                             <?php else: ?>
-                                <i class="fas fa-arrow-down text-primary"></i>
+                                <i class="fas fa-arrow-down text-info"></i>
                             <?php endif; ?>
                         </th>
                         <th class="text-center"><i class="fas fa-cogs"></i> Action</th>
@@ -188,7 +188,7 @@ $total_pages = ceil($total_records / $records_per_page);
                             <td><?= date("F d, Y", strtotime($row['date'])) ?></td>
                             <td><?= number_format($row['quantity']) ?></td>
                             <td>
-                                <button class="btn btn-sm btn-primary edit-production"
+                                <button class="btn btn-sm btn-info edit-production"
                                         data-id="<?= $row['id'] ?>"
                                         data-date="<?= $row['date'] ?>"
                                         data-quantity="<?= $row['quantity'] ?>">
@@ -211,20 +211,23 @@ $total_pages = ceil($total_records / $records_per_page);
             </table>
 
             <nav aria-label="Production Pagination">
-                <ul class="pagination">
-                    <li class="page-item <?= $current_page <= 1 ? 'disabled' : '' ?>">
-                        <a class="page-link" href="?page=production&page_no=<?= $current_page - 1 ?>&date_start=<?= $date_start ?>&date_end=<?= $date_end ?>&high_production=<?= $high_production ?>&entries=<?= $records_per_page ?>">Previous</a>
-                    </li>
-                    <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                        <li class="page-item <?= $i == $current_page ? 'active' : '' ?>">
-                            <a class="page-link" href="?page=production&page_no=<?= $i ?>&date_start=<?= $date_start ?>&date_end=<?= $date_end ?>&high_production=<?= $high_production ?>&entries=<?= $records_per_page ?>"><?= $i ?></a>
-                        </li>
-                    <?php endfor; ?>
-                    <li class="page-item <?= $current_page >= $total_pages ? 'disabled' : '' ?>">
-                        <a class="page-link" href="?page=production&page_no=<?= $current_page + 1 ?>&date_start=<?= $date_start ?>&date_end=<?= $date_end ?>&high_production=<?= $high_production ?>&entries=<?= $records_per_page ?>">Next</a>
-                    </li>
-                </ul>
-            </nav>
+  <ul class="pagination">
+    <li class="page-item <?= $current_page <= 1 ? 'disabled' : '' ?>">
+      <a class="page-link" href="?page=production&page_no=<?= $current_page - 1 ?>&date_start=<?= $date_start ?>&date_end=<?= $date_end ?>&high_production=<?= $high_production ?>&entries=<?= $records_per_page ?>">Previous</a>
+    </li>
+
+    <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+      <li class="page-item <?= $i == $current_page ? 'active' : '' ?>">
+        <a class="page-link <?= $i == $current_page ? 'bg-info text-white border-info' : '' ?>" href="?page=production&page_no=<?= $i ?>&date_start=<?= $date_start ?>&date_end=<?= $date_end ?>&high_production=<?= $high_production ?>&entries=<?= $records_per_page ?>"><?= $i ?></a>
+      </li>
+    <?php endfor; ?>
+
+    <li class="page-item <?= $current_page >= $total_pages ? 'disabled' : '' ?>">
+      <a class="page-link" href="?page=production&page_no=<?= $current_page + 1 ?>&date_start=<?= $date_start ?>&date_end=<?= $date_end ?>&high_production=<?= $high_production ?>&entries=<?= $records_per_page ?>">Next</a>
+    </li>
+  </ul>
+</nav>
+
         </div>
     </div>
 </div>
@@ -253,7 +256,7 @@ $total_pages = ceil($total_records / $records_per_page);
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary" form="production-form">Save Production</button>
+                <button type="submit" class="btn btn-info" form="production-form">Save Production</button>
             </div>
         </div>
     </div>
